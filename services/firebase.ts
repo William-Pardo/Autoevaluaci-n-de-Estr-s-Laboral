@@ -1,9 +1,10 @@
 // services/firebase.ts
-import firebase from 'firebase/compat/app';
-import 'firebase/compat/firestore';
+// Importa las funciones modulares de Firebase v9+
+import { initializeApp } from 'firebase/app';
+import { getFirestore, collection, getDocs, Firestore } from 'firebase/firestore'; // Importa Firestore para el tipo
 
 // -----------------------------------------------------------------------------
-//  CONFIGURACIÓN DE FIREBASE CON VALORES DIRECTOS (PARA DESPLIEGUE SENCILLO)
+//  CONFIGURACIÓN DE FIREBASE CON VALORES DIRECTOS
 //  Estos valores provienen de Firebase Console -> Configuración del proyecto -> Tus apps -> Web -> Config
 // -----------------------------------------------------------------------------
 const firebaseConfig = {
@@ -13,43 +14,39 @@ const firebaseConfig = {
   storageBucket: "my-project-1676425145510.firebasestorage.app", // Tus valores REALES de Firebase
   messagingSenderId: "24341038571", // Tus valores REALES de Firebase
   appId: "1:24341038571:web:359a2c2e2d333c1d5a85ae", // Tus valores REALES de Firebase
-  measurementId: "G-T87HQ24LZN" // Tus valores REALES de Firebase (Si no usas Analytics, puedes quitar esta línea, pero no afecta si la dejas)
+  measurementId: "G-T87HQ24LZN" // Tus valores REALES de Firebase (Si no usas Analytics, puedes quitar esta línea)
 };
 
 // -----------------------------------------------------------------------------
-//  Inicializa Firebase solo una vez
+//  Inicializa Firebase y Firestore
 // -----------------------------------------------------------------------------
-let db  : firebase.firestore.Firestore | null = null;
-let err : Error | null                = null;
+let db: Firestore | null = null; // Usamos el tipo Firestore de la v9
+let firebaseError: Error | null = null;
 
 try {
-  // ✅ IMPORTANTE: Hemos comentado esta validación que buscaba projectId
-  // en .env.local para que NO cause el error.
-  // Ahora el projectId está definido directamente arriba.
-  // if (!firebaseConfig.projectId) {
-  //   throw new Error(
-  //     "El 'projectId' de Firebase no está definido. Verifica tu archivo .env.local."
-  //   );
-  // }
+  const app = initializeApp(firebaseConfig);
+  db = getFirestore(app);
 
-  if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-  }
+  // --- PRUEBA DE CONEXIÓN CON LA NUEVA FORMA ---
+  // Esta parte se ejecutará UNA VEZ cuando se cargue el servicio.
+  // Es útil para depurar la conexión.
+  (async () => {
+    try {
+      const testCollectionRef = collection(db, 'usuarios'); // Usamos la función collection de la v9
+      await getDocs(testCollectionRef); // Intentamos leer para confirmar conexión
+      console.log('✅ Firebase Firestore conectado correctamente.');
+    } catch (e) {
+      console.error('❌ Error al verificar la conexión de Firebase Firestore:', e);
+      // No asignamos a firebaseError aquí para no bloquear la app si es solo un problema de permisos
+      // o colección no existente en el momento de la prueba. El error principal ya se captura arriba.
+    }
+  })();
+  // ---------------------------------------------
 
-  db = firebase.firestore();
 } catch (e) {
-  err = e instanceof Error ? e : new Error(String(e));
-  // Hemos cambiado el mensaje de error de consola para distinguirlo
-  console.error("🔴 ERROR AL INICIALIZAR FIREBASE (Catch - Configuración directa):", err.message);
+  firebaseError = e instanceof Error ? e : new Error(String(e));
+  console.error("🔴 ERROR AL INICIALIZAR FIREBASE (Catch principal - Nueva configuración):", firebaseError.message);
 }
 
-// -----------------------------------------------------------------------------
-//  Configuración de la API de Gemini (IGNORAR POR AHORA)
-//  No estamos tocando esto por el momento, ya lo eliminaremos después.
-// -----------------------------------------------------------------------------
-// const GEMINI_API_KEY = "TU_CLAVE_DE_API_GEMINI_AQUI";
-// export { GEMINI_API_KEY };
-
-
-// Exporta la instancia de Firestore y cualquier error
-export { db, err as firebaseError };
+// Exporta la instancia de Firestore y el error
+export { db, firebaseError };
