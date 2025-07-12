@@ -1,0 +1,5 @@
+{
+  "name": "App de Encuesta de Bienestar UNAD",
+  "description": "Una aplicación completa para realizar encuestas de bienestar, con un panel de administración para visualizar estadísticas y un asistente de IA para ofrecer apoyo personalizado.",
+  "requestFramePermissions": []
+}
